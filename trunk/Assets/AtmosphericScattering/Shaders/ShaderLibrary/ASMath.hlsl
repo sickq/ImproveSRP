@@ -1,5 +1,5 @@
-﻿#ifndef _AC2_MATH_INCLUDED
-#define _AC2_MATH_INCLUDED
+﻿#ifndef _AS_MATH_INCLUDED
+#define _AS_MATH_INCLUDED
 
 #ifndef PI
 #define PI 3.1415926535

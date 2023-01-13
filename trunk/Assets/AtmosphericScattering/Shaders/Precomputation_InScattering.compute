@@ -1,0 +1,49 @@
+﻿#pragma kernel CSInScattering
+
+// IntegrateInscattering
+// P - current integration point
+// A - camera position
+// C - top of the atmosphere
+
+#include "ShaderLibrary/ASMath.hlsl"
+#include "ShaderLibrary/ASInclude.hlsl"
+#include "ShaderLibrary/InScattering.hlsl"
+
+#define SAMPLECOUNT_INSCATTERING 512
+
+// InScattering
+RWTexture2D<float3> _RWinScatteringLUT;
+
+// =================================================================================
+// Precompute InScattering
+// =================================================================================
+// x : viewDir, y: sunDir 
+[numthreads(8, 8, 1)]
+void CSInScattering(uint3 id: SV_DispatchThreadID)
+{
+    int w, h;
+    _RWinScatteringLUT.GetDimensions(w, h);
+    float cosViewAngle01 = (float)id.x / h;
+    float cosSunAngle01 = (float)id.y / w;
+    
+    float3 planetCenter = float3(0, -_PlanetRadius, 0);
+    
+    float3 rayStart = float3(0, _SurfaceHeight, 0);
+    float cosSunAngle = cosSunAngle01 * 2 - 1;
+    float sinSunAngle = 1 - sqrt(cosSunAngle * cosSunAngle);
+    float3 lightDir = float3(sinSunAngle, cosSunAngle, 0);
+    
+    float cosViewAngle = cosViewAngle01 * 2 - 1;
+    float sinViewAngle = 1 - sqrt(cosViewAngle * cosViewAngle);
+    float3 rayDir = float3(sinViewAngle, cosViewAngle, 0);
+    
+    float2 intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius + _AtmosphereHeight);
+    float rayLength = intersection.y;
+    
+    intersection = RaySphereIntersection(rayStart, rayDir, planetCenter, _PlanetRadius);
+    if (intersection.x >= 0)
+        rayLength = min(rayLength, intersection.x);
+    
+    float3 extinction;
+    _RWinScatteringLUT[id.xy] = IntegrateInscattering(rayStart, rayDir, rayLength, planetCenter, 1, lightDir, SAMPLECOUNT_INSCATTERING, extinction);
+}

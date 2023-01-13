@@ -1,0 +1,26 @@
+﻿#pragma kernel CSsunOnSurface
+
+#include "ShaderLibrary/Precomputation_Common.hlsl"
+
+// Sun On Surface
+RWTexture2D<float3> _RWsunOnSurfaceLUT;
+
+// =================================================================================
+// PrecomputeSunOnSurface
+// =================================================================================
+float3 ComputeSunOnSurface(float cosAngle01, float height01)
+{
+    return _LightFromOuterSpace * Transmittance(cosAngle01, height01);
+}
+
+[numthreads(8, 8, 1)]
+void CSsunOnSurface(uint3 id: SV_DispatchThreadID)
+{
+    int w, h;
+    _RWsunOnSurfaceLUT.GetDimensions(w, h);
+    
+    float cosAngle01 = (float)id.x / w;
+    float height01 = (float)id.y / h;
+    
+    _RWsunOnSurfaceLUT[id.xy] = ComputeSunOnSurface(cosAngle01, height01);
+}

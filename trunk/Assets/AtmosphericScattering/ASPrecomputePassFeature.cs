@@ -6,13 +6,13 @@ using UnityEngine.Rendering.Universal;
 public class ASPrecomputePassFeature : ScriptableRendererFeature
 {
     private ASPrecomputePass m_ScriptablePass;
-    public ComputeShader computeShader;
+    public AtmosphericScatteringData config;
     public RenderPassEvent Event = RenderPassEvent.BeforeRendering;
     
     /// <inheritdoc/>
     public override void Create()
     {
-        m_ScriptablePass = new ASPrecomputePass(computeShader);
+        m_ScriptablePass = new ASPrecomputePass(config);
 
         // Configures where the render pass should be injected.
         m_ScriptablePass.renderPassEvent = Event;
@@ -27,12 +27,15 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
     
     private class ASPrecomputePass : ScriptableRenderPass
     {
-        private ComputeShader cs;
-        private RenderTargetHandle particleDensityLUT;
-        public ASPrecomputePass(ComputeShader cs)
+        private RenderTargetHandle integrateCPDensityLUT;
+        private RenderTargetHandle RWintergalCPDensityLUT;
+
+        private AtmosphericScatteringData asConfig;
+        public ASPrecomputePass(AtmosphericScatteringData config)
         {
-            this.cs = cs;
-            particleDensityLUT.Init("_particleDensityLUT");
+            asConfig = config;
+            integrateCPDensityLUT.Init("_IntegralCPDensityLUT");
+            RWintergalCPDensityLUT.Init("_RWintegralCPDensityLUT");
         }
         
         // This method is called before executing the render pass.
@@ -42,18 +45,7 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
         // The render pipeline will ensure target setup and clearing happens in a performant manner.
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
-            var desc = new RenderTextureDescriptor(1024, 1024, RenderTextureFormat.RGFloat, 0);
-            desc.vrUsage = VRTextureUsage.None; // We only need one for both eyes in VR
-            desc.sRGB = false;
-            cmd.GetTemporaryRT(particleDensityLUT.id, desc, FilterMode.Bilinear);
             
-            // if (_particleDensityLUT == null)
-            // {
-            //     _particleDensityLUT = new RenderTexture(1024, 1024, 0, RenderTextureFormat.RGFloat, RenderTextureReadWrite.Linear);
-            //     _particleDensityLUT.name = "ParticleDensityLUT";
-            //     _particleDensityLUT.filterMode = FilterMode.Bilinear;
-            //     _particleDensityLUT.Create();
-            // }
         }
 
         // Here you can implement the rendering logic.
@@ -65,15 +57,41 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
             CommandBuffer cmd = CommandBufferPool.Get();
             using (new ProfilingScope(cmd, ProfilingSampler.Get(ASProfilerType.Precompute)))
             {
-                // cmd.DispatchCompute(cs, );
+                SetCommonParams(cmd, asConfig);
+
+                var desc = new RenderTextureDescriptor(1024, 1024, RenderTextureFormat.RGFloat, 0);
+                desc.vrUsage = VRTextureUsage.None; // We only need one for both eyes in VR
+                desc.sRGB = false;
+                desc.useMipMap = false;
+                desc.enableRandomWrite = true;
+                
+                
+                cmd.GetTemporaryRT(RWintergalCPDensityLUT.id, desc, FilterMode.Bilinear);
+                int index = asConfig.computerShader_IntegrateCPDensity.FindKernel("CSIntergalCPDensity");
+                uint threadNumX, threadNumY, threadNumZ;
+                asConfig.computerShader_IntegrateCPDensity.GetKernelThreadGroupSizes(index, out threadNumX, out threadNumY, out threadNumZ);
+                ASUtils.Dispatch(asConfig.computerShader_IntegrateCPDensity, index, asConfig.integrateCPDensityLUTSize);
             }
+            context.ExecuteCommandBuffer(cmd);
+            
+            CommandBufferPool.Release(cmd);
         }
 
         // Cleanup any allocated resources that were created during the execution of this render pass.
         public override void OnCameraCleanup(CommandBuffer cmd)
         {
         }
-        
+
+        private void SetCommonParams(CommandBuffer cmd, AtmosphericScatteringData config)
+        {
+            cmd.SetGlobalVector(ASShaderPropertyIDs.kDensityScaleHeight, new Vector4(config.rDensityScale, config.mDensityScale));
+            cmd.SetGlobalFloat(ASShaderPropertyIDs.kPlanetRadius, config.planetRadius);
+            cmd.SetGlobalFloat(ASShaderPropertyIDs.kAtmosphereHeight, config.atmosphereHeight);
+            cmd.SetGlobalFloat(ASShaderPropertyIDs.kSurfaceHeight, config.surfaceHeight);
+            cmd.SetGlobalVector(ASShaderPropertyIDs.kIncomingLight, config.lightFromOuterSpace);
+            cmd.SetGlobalFloat(ASShaderPropertyIDs.kSunIntensity, config.sunIntensity);
+            cmd.SetGlobalFloat(ASShaderPropertyIDs.kSunMieG, config.sunMieG);
+        }
         
     }
 

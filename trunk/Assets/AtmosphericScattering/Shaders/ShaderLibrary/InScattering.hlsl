@@ -5,25 +5,8 @@
     // P - current integration point
     // A - camera position
     // C - top of the atmosphere
-    #include "ACMath.hlsl"
-    
-    TEXTURE2D(_IntegralCPDensityLUT);
-    SAMPLER(sampler_IntegralCPDensityLUT);
-    
-    uniform float2 _DensityScaleHeight;
-    uniform float _PlanetRadius;
-    uniform float _AtmosphereHeight;
-    uniform float _SurfaceHeight;
-    
-    uniform float3 _ScatteringR;
-    uniform float3 _ScatteringM;
-    uniform float3 _ExtinctionR;
-    uniform float3 _ExtinctionM;
-    uniform float _MieG;
-    
-    uniform half3 _LightFromOuterSpace;
-    uniform float _SunIntensity;
-    uniform float _SunMieG;
+    #include "ASInclude.hlsl"
+    #include "ASMath.hlsl"
     
     void ApplyPhaseFunction(inout float3 scatterR, inout float3 scatterM, float cosAngle)
     {

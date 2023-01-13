@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2ec5981fc19f43345a1335efc1c64a96, type: 3}
+  m_Name: AtmosphericScatteringAsset
+  m_EditorClassIdentifier: 
+  distanceScale: 1
+  rCoef: {x: 5.8, y: 13.5, z: 33.1}
+  rScatterStrength: 1
+  rExtinctionStrength: 1
+  mCoef: {x: 2, y: 2, z: 2}
+  mScatterStrength: 1
+  mExtinctionStrength: 1
+  mieG: 0.625
+  lightShaft: 1
+  IncomingLight: {r: 4, g: 4, b: 4, a: 4}
+  planetRadius: 6371000
+  atmosphereHeight: 80000
+  surfaceHeight: 0
+  rDensityScale: 7994
+  mDensityScale: 1200
+  sunIntensity: 0.75
+  sunMieG: 0.98
+  computerShader_Sun: {fileID: 0}
+  computerShader_Ambient: {fileID: 0}
+  computerShader_InScattering: {fileID: 0}
+  computerShader_IntegrateCPDensity: {fileID: 0}
+  integrateCPDensityLUTSize: {x: 512, y: 512}
+  sunOnSurfaceLUTSize: {x: 512, y: 512}
+  ambientLUTSize: 512
+  inScatteringLUTSize: {x: 1024, y: 1024}
