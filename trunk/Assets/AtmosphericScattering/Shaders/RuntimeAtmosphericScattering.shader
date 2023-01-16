@@ -19,7 +19,7 @@ Shader "Skybox/AtmosphericScattering"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "ShaderLibrary/InScattering.hlsl"
             
-            #define SAMPLECOUNT_KSYBOX 64
+            #define SAMPLECOUNT_KSYBOX 16
             
             struct appdata
             {
