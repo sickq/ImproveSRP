@@ -27,15 +27,38 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
     
     private class ASPrecomputePass : ScriptableRenderPass
     {
+        private Texture2D m_HemiSphereRandomNormlizedVecLUT;
+        
         private RenderTargetHandle integrateCPDensityLUT;
-        private RenderTargetHandle RWintergalCPDensityLUT;
+        private RenderTargetHandle RWIntergalCPDensityLUT;
+        private RenderTargetHandle RWSunOnSurfaceLUT;
+        private RenderTargetHandle RWInScatteringLUT;
+        private RenderTargetHandle RWAmbientLUT;
 
         private AtmosphericScatteringData asConfig;
         public ASPrecomputePass(AtmosphericScatteringData config)
         {
             asConfig = config;
             integrateCPDensityLUT.Init("_IntegralCPDensityLUT");
-            RWintergalCPDensityLUT.Init("_RWintegralCPDensityLUT");
+            RWIntergalCPDensityLUT.Init("_RWintegralCPDensityLUT");
+            
+            RWSunOnSurfaceLUT.Init("_RWsunOnSurfaceLUT");
+            
+            RWInScatteringLUT.Init("_RWinScatteringLUT");
+            
+            RWAmbientLUT.Init("_RWambientLUT");
+            
+            if (m_HemiSphereRandomNormlizedVecLUT == null)
+            {
+                m_HemiSphereRandomNormlizedVecLUT = new Texture2D(512, 1, TextureFormat.RGB24, false, true);
+                m_HemiSphereRandomNormlizedVecLUT.filterMode = FilterMode.Point;
+                m_HemiSphereRandomNormlizedVecLUT.Apply();
+                for (int i = 0; i < m_HemiSphereRandomNormlizedVecLUT.width; ++i)
+                {
+                    var randomVec = UnityEngine.Random.onUnitSphere;
+                    m_HemiSphereRandomNormlizedVecLUT.SetPixel(i, 0, new Color(randomVec.x, Mathf.Abs(randomVec.y), randomVec.z));
+                }
+            }
         }
         
         // This method is called before executing the render pass.
@@ -59,18 +82,55 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
             {
                 SetCommonParams(cmd, asConfig);
 
-                var desc = new RenderTextureDescriptor(1024, 1024, RenderTextureFormat.RGFloat, 0);
+                var desc = new RenderTextureDescriptor(asConfig.integrateCPDensityLUTSize.x, asConfig.integrateCPDensityLUTSize.y, RenderTextureFormat.RGFloat, 0);
                 desc.vrUsage = VRTextureUsage.None; // We only need one for both eyes in VR
                 desc.sRGB = false;
                 desc.useMipMap = false;
                 desc.enableRandomWrite = true;
+
+                var computerShader = asConfig.computerShader_IntegrateCPDensity;
+                cmd.GetTemporaryRT(RWIntergalCPDensityLUT.id, desc, FilterMode.Bilinear);
+                int index = computerShader.FindKernel("CSIntergalCPDensity");
+                cmd.SetComputeTextureParam(computerShader, index, RWIntergalCPDensityLUT.id, RWIntergalCPDensityLUT.Identifier());
+                ASUtils.Dispatch(computerShader, index, asConfig.integrateCPDensityLUTSize);
+                cmd.SetGlobalTexture(ASShaderPropertyIDs.IntergalCPDensityLUT, RWIntergalCPDensityLUT.Identifier());
+
+                var sunOnSurfaceDesc = desc;
+                sunOnSurfaceDesc.width = asConfig.sunOnSurfaceLUTSize.x;
+                sunOnSurfaceDesc.height = asConfig.sunOnSurfaceLUTSize.y;
+                sunOnSurfaceDesc.graphicsFormat = GraphicsFormat.R16G16B16A16_UNorm;
+                computerShader = asConfig.computerShader_Sun;
+                index = computerShader.FindKernel("CSsunOnSurface");
+                cmd.GetTemporaryRT(RWSunOnSurfaceLUT.id, sunOnSurfaceDesc, FilterMode.Bilinear);
+                cmd.SetComputeTextureParam(computerShader, index, RWSunOnSurfaceLUT.id, RWSunOnSurfaceLUT.Identifier());
+                cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.IntergalCPDensityLUT, RWIntergalCPDensityLUT.Identifier());
+                ASUtils.Dispatch(computerShader, index, asConfig.sunOnSurfaceLUTSize);
                 
+                var inScatteringLUTDesc = desc;
+                inScatteringLUTDesc.width = asConfig.inScatteringLUTSize.x;
+                inScatteringLUTDesc.height = asConfig.inScatteringLUTSize.y;
+                inScatteringLUTDesc.graphicsFormat = GraphicsFormat.R16G16B16A16_UNorm;
+                computerShader = asConfig.computerShader_InScattering;
+                index = computerShader.FindKernel("CSInScattering");
+                cmd.GetTemporaryRT(RWInScatteringLUT.id, sunOnSurfaceDesc, FilterMode.Bilinear);
+                cmd.SetComputeTextureParam(computerShader, index, RWInScatteringLUT.id, RWInScatteringLUT.Identifier());
+                cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.IntergalCPDensityLUT, RWIntergalCPDensityLUT.Identifier());
+                ASUtils.Dispatch(computerShader, index, asConfig.inScatteringLUTSize);
+                cmd.SetGlobalTexture(ASShaderPropertyIDs.InScatteringLUT, RWInScatteringLUT.Identifier());
                 
-                cmd.GetTemporaryRT(RWintergalCPDensityLUT.id, desc, FilterMode.Bilinear);
-                int index = asConfig.computerShader_IntegrateCPDensity.FindKernel("CSIntergalCPDensity");
-                uint threadNumX, threadNumY, threadNumZ;
-                asConfig.computerShader_IntegrateCPDensity.GetKernelThreadGroupSizes(index, out threadNumX, out threadNumY, out threadNumZ);
-                ASUtils.Dispatch(asConfig.computerShader_IntegrateCPDensity, index, asConfig.integrateCPDensityLUTSize);
+                var size = new Vector2Int(asConfig.ambientLUTSize, 1);
+                var ambientLUTDesc = desc;
+                ambientLUTDesc.width = asConfig.ambientLUTSize;
+                ambientLUTDesc.height = 1;
+                ambientLUTDesc.graphicsFormat = GraphicsFormat.R16G16B16A16_UNorm;
+                computerShader = asConfig.computerShader_Ambient;
+                index = computerShader.FindKernel("CSAmbient");
+                cmd.GetTemporaryRT(RWAmbientLUT.id, ambientLUTDesc, FilterMode.Bilinear);
+                cmd.SetComputeTextureParam(computerShader, index, RWAmbientLUT.id, RWAmbientLUT.Identifier());
+                cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.HemiSphereRandomNormalizedVecLUT, m_HemiSphereRandomNormlizedVecLUT);
+                cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.InScatteringLUT, RWInScatteringLUT.Identifier());
+                ASUtils.Dispatch(computerShader, index, size);
+
             }
             context.ExecuteCommandBuffer(cmd);
             
@@ -91,6 +151,23 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
             cmd.SetGlobalVector(ASShaderPropertyIDs.kIncomingLight, config.lightFromOuterSpace);
             cmd.SetGlobalFloat(ASShaderPropertyIDs.kSunIntensity, config.sunIntensity);
             cmd.SetGlobalFloat(ASShaderPropertyIDs.kSunMieG, config.sunMieG);
+            
+            
+            
+            Shader.SetGlobalFloat(ASShaderPropertyIDs.kDistanceScale, config.distanceScale);
+            //地球的数据：
+            //private readonly Vector4 _rayleighSct = new Vector4(5.8f, 13.5f, 33.1f, 0.0f) * 0.000001f; 
+            //private readonly Vector4 _mieSct = new Vector4(2.0f, 2.0f, 2.0f, 0.0f) * 0.00001f; 
+            var rCoef = config.rCoef * 0.000001f;
+            var mCoef = config.mCoef * 0.00001f;
+            Shader.SetGlobalVector(ASShaderPropertyIDs.kScatteringR, rCoef * config.rScatterStrength);
+            Shader.SetGlobalVector(ASShaderPropertyIDs.kScatteringM, mCoef * config.mScatterStrength);
+            Shader.SetGlobalVector(ASShaderPropertyIDs.kExtinctionR, rCoef * config.rExtinctionStrength);
+            Shader.SetGlobalVector(ASShaderPropertyIDs.kExtinctionM, mCoef * config.mExtinctionStrength);
+            Shader.SetGlobalFloat(ASShaderPropertyIDs.kMieG, config.mieG);
+
+            if (asConfig.lightShaft) Shader.EnableKeyword(ASShaderPropertyIDs.kLightShaft);
+            else Shader.DisableKeyword(ASShaderPropertyIDs.kLightShaft);
         }
         
     }
