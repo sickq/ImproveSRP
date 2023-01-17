@@ -92,7 +92,7 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
                 cmd.GetTemporaryRT(RWIntergalCPDensityLUT.id, desc, FilterMode.Bilinear);
                 int index = computerShader.FindKernel("CSIntergalCPDensity");
                 cmd.SetComputeTextureParam(computerShader, index, RWIntergalCPDensityLUT.id, RWIntergalCPDensityLUT.Identifier());
-                ASUtils.Dispatch(computerShader, index, asConfig.integrateCPDensityLUTSize);
+                ASUtils.DispatchCompute(cmd, computerShader, index, asConfig.integrateCPDensityLUTSize);
                 cmd.SetGlobalTexture(ASShaderPropertyIDs.IntergalCPDensityLUT, RWIntergalCPDensityLUT.Identifier());
 
                 var sunOnSurfaceDesc = desc;
@@ -104,7 +104,7 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
                 cmd.GetTemporaryRT(RWSunOnSurfaceLUT.id, sunOnSurfaceDesc, FilterMode.Bilinear);
                 cmd.SetComputeTextureParam(computerShader, index, RWSunOnSurfaceLUT.id, RWSunOnSurfaceLUT.Identifier());
                 cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.IntergalCPDensityLUT, RWIntergalCPDensityLUT.Identifier());
-                ASUtils.Dispatch(computerShader, index, asConfig.sunOnSurfaceLUTSize);
+                ASUtils.DispatchCompute(cmd, computerShader, index, asConfig.sunOnSurfaceLUTSize);
                 
                 var inScatteringLUTDesc = desc;
                 inScatteringLUTDesc.width = asConfig.inScatteringLUTSize.x;
@@ -115,7 +115,7 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
                 cmd.GetTemporaryRT(RWInScatteringLUT.id, sunOnSurfaceDesc, FilterMode.Bilinear);
                 cmd.SetComputeTextureParam(computerShader, index, RWInScatteringLUT.id, RWInScatteringLUT.Identifier());
                 cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.IntergalCPDensityLUT, RWIntergalCPDensityLUT.Identifier());
-                ASUtils.Dispatch(computerShader, index, asConfig.inScatteringLUTSize);
+                ASUtils.DispatchCompute(cmd, computerShader, index, asConfig.inScatteringLUTSize);
                 cmd.SetGlobalTexture(ASShaderPropertyIDs.InScatteringLUT, RWInScatteringLUT.Identifier());
                 
                 var size = new Vector2Int(asConfig.ambientLUTSize, 1);
@@ -129,7 +129,7 @@ public class ASPrecomputePassFeature : ScriptableRendererFeature
                 cmd.SetComputeTextureParam(computerShader, index, RWAmbientLUT.id, RWAmbientLUT.Identifier());
                 cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.HemiSphereRandomNormalizedVecLUT, m_HemiSphereRandomNormlizedVecLUT);
                 cmd.SetComputeTextureParam(computerShader, index, ASShaderPropertyIDs.InScatteringLUT, RWInScatteringLUT.Identifier());
-                ASUtils.Dispatch(computerShader, index, size);
+                ASUtils.DispatchCompute(cmd, computerShader, index, size);
 
             }
             context.ExecuteCommandBuffer(cmd);
