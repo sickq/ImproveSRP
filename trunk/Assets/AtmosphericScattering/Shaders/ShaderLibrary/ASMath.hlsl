@@ -44,11 +44,20 @@ float RayleighPhaseElek(float cosAngle)
     return (8.0 / 10) * (7.0/ 5 + 0.5 * cosAngle);
 }
 
+float Sun(float cosAngle)
+{
+	float g = 0.98;
+	float g2 = g * g;
+
+	float sun = pow(1 - g, 2.0) / (4 * PI * pow(1.0 + g2 - 2.0*g*cosAngle, 1.5));
+	return sun * 0.003;// 5;
+}
+
 float MiePhaseHG(float cosAngle,float g)
 {
     float oneMinusG = 1 - g;
     float g2 = g * g;
-    return (1.0 / (4.0 * PI)) * oneMinusG * oneMinusG / pow( abs(1.0 + g2 - 2.0*g*cosAngle), 3.0 / 2.0);
+    return (1.0 / (4.0 * PI)) * oneMinusG * oneMinusG / pow( abs(1.0 + g2 - 2.0 * g * cosAngle), 3.0 / 2.0);
 }
 
 float MiePhaseHGCS(float cosAngle,float g)

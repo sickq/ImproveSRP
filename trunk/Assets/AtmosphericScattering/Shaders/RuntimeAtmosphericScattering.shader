@@ -43,6 +43,10 @@ Shader "Skybox/AtmosphericScattering"
             half4 frag(v2f i): SV_Target
             {
                 float3 rayStart = _WorldSpaceCameraPos.xyz;
+                if(rayStart.y <= 10)
+                {
+                    rayStart.y = 10;
+                }
                 float3 rayDir = normalize(TransformObjectToWorld(i.positionOS));
                 float3 planetCenter = float3(0, -_PlanetRadius, 0);
                 float3 lightDir = _MainLightPosition.xyz;

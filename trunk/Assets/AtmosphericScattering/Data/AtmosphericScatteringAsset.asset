@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2ec5981fc19f43345a1335efc1c64a96, type: 3}
   m_Name: AtmosphericScatteringAsset
   m_EditorClassIdentifier: 
-  distanceScale: 30
+  distanceScale: 3
   rCoef: {x: 5.8, y: 13.5, z: 33.1}
   rScatterStrength: 1.4
   rExtinctionStrength: 1
@@ -21,14 +21,14 @@ MonoBehaviour:
   mExtinctionStrength: 1
   mieG: 0.625
   lightShaft: 0
-  lightFromOuterSpace: {r: 4, g: 4, b: 4, a: 4}
+  lightFromOuterSpace: {r: 10, g: 10, b: 10, a: 4}
   planetRadius: 6357000
   atmosphereHeight: 80000
   surfaceHeight: 3000
   rDensityScale: 7994
   mDensityScale: 1200
   sunIntensity: 1
-  sunMieG: 0.99
+  sunMieG: 0.98
   computerShader_Sun: {fileID: 7200000, guid: 19c9328802bce2c4fa4aaa0033989a30, type: 3}
   computerShader_Ambient: {fileID: 7200000, guid: 93ddbec04836fb84d9c59e6bc86a5591,
     type: 3}

@@ -59,7 +59,7 @@ void CSIntergalCPDensity(uint3 id: SV_DispatchThreadID)
     float height01 = (float)id.y / h;
     
     float cosAngle = cosAngle01 * 2 - 1;
-    float sinAngle = sqrt(1 - saturate(cosAngle * cosAngle));
+    float sinAngle = sqrt(saturate(1 - cosAngle * cosAngle));
     float height = lerp(0, _AtmosphereHeight, height01);
     
     float3 rayStart = float3(0, height, 0);

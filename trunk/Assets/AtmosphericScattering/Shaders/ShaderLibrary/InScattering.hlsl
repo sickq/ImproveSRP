@@ -16,6 +16,7 @@
     
     float3 RenderSun(float3 scatterM, float cosAngle)
     {
+        //return scatterM * Sun(cosAngle);
         return scatterM * MiePhaseHG(cosAngle, _SunMieG) * 0.003;
     }
     
@@ -27,6 +28,7 @@
         float cosAngle = dot(normalize(position - planetCenter), lightDir.xyz);
         
         particleDensityCP = SAMPLE_TEXTURE2D_LOD(_IntegralCPDensityLUT, sampler_IntegralCPDensityLUT, float2(cosAngle * 0.5 + 0.5, (height / _AtmosphereHeight)), 0).xy;
+        //particleDensityCP = _IntegralCPDensityLUT.Sample(sampler_IntegralCPDensityLUT, float2(cosAngle * 0.5 + 0.5, (height / _AtmosphereHeight))).xy;
     }
     
     void ComputeLocalInscattering(float2 densityAtP, float2 particleDensityCP, float2 particleDensityAP, out float3 localInscatterR, out float3 localInscatterM)
@@ -44,9 +46,8 @@
     
     float3 IntegrateInscattering(float3 rayStart, float3 rayDir, float rayLength, float3 planetCenter, float distanceScale, float3 lightDir, float sampleCount, out float3 extinction)
     {
-        rayLength *= distanceScale;
         float3 step = rayDir * (rayLength / sampleCount);
-        float stepSize = length(step) ;//* distanceScale;
+        float stepSize = length(step) * distanceScale;
         
         float2 particleDensityAP = 0;
         float3 scatterR = 0;
@@ -81,7 +82,7 @@
             prevLocalInscatterM = localInscatterM;
         }
         
-        float3 m = scatterR;
+        float3 m = scatterM;
         float cosAngle = dot(rayDir, lightDir.xyz);
         
         ApplyPhaseFunction(scatterR, scatterM, cosAngle);
