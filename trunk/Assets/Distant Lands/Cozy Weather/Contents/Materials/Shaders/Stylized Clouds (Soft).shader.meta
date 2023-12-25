@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 9db94050e98f9034aaed80c3072635dd
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - CZY_ChemtrailsTexture: {fileID: 2800000, guid: 9b3476b4df9abf8479476bae1bcd8a84,
+      type: 3}
+  - CZY_CirrostratusTexture: {fileID: 2800000, guid: bf43c8d7b74e204469465f36dfff7d6a,
+      type: 3}
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

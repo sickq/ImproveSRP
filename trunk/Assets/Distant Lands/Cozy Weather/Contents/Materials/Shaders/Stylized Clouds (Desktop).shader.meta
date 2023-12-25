@@ -1,0 +1,12 @@
+fileFormatVersion: 2
+guid: 1a6791d1617850b49b130b523f5ebf5c
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - CZY_AltocumulusTexture: {fileID: 2800000, guid: b03bb03c5876b954ba45feffa4aaad63,
+      type: 3}
+  nonModifiableTextures: []
+  preprocessorOverride: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
